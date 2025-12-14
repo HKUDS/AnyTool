@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "browser-use": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://api.browser-use.com/mcp",
+        "--header",
+        "X-Browser-Use-API-Key: your-api-key"
+      ]
+    }
+  }
+}
