@@ -440,7 +440,7 @@ async with AnyTool(config=config) as tool_layer:
 | | `enable_cache_persistence` | Persist embedding cache to disk | `true` or `false` (default: `true`) |
 | **tool_quality** | `enabled` | Enable tool quality tracking | `true` or `false` (default: `true`) |
 | | `enable_persistence` | Persist quality data to disk | `true` or `false` (default: `true`) |
-| | `cache_dir` | Directory for quality cache | Path string or `null` (default: `~/.anytool/tool_quality`) |
+| | `cache_dir` | Directory for quality cache | Path string (default: `.anytool/tool_quality` in project directory) |
 | | `auto_evaluate_descriptions` | Automatically evaluate tool descriptions using LLM | `true` or `false` (default: `true`) |
 | | `enable_quality_ranking` | Incorporate quality scores in tool ranking | `true` or `false` (default: `true`) |
 | | `evolve_interval` | Trigger self-evolution every N tool executions | Any integer 1-100 (default: `5`) |

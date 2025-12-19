@@ -678,7 +678,7 @@ class GroundingClient:
         
         # Determine max_tools from config if not provided
         if max_tools is None:
-            max_tools = get_config_value(self._config, "tool_search.max_tools", 300)
+            max_tools = self._config.tool_search.max_tools
         
         # Decide whether search is needed
         tools_count = len(all_tools)

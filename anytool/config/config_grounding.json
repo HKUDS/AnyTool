@@ -39,7 +39,7 @@
   "tool_quality": {
     "enabled": true,
     "enable_persistence": true,
-    "cache_dir": null,
+    "cache_dir": ".anytool/tool_quality",
     "auto_evaluate_descriptions": true,
     "enable_quality_ranking": true,
     "evolve_interval": 5
