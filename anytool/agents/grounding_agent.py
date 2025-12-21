@@ -213,11 +213,6 @@ class GroundingAgent(BaseAgent):
         if not instruction:
             raise ValueError("context must contain 'instruction' field")
         
-        # If only instruction, return directly
-        if len(context) == 1 and "instruction" in context:
-            messages.append({"role": "user", "content": instruction})
-            return messages
-        
         # Add workspace directory
         workspace_dir = context.get("workspace_dir")
         if workspace_dir:
