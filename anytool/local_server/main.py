@@ -326,8 +326,8 @@ def execute_command_with_verification():
                 verify_cmd = verification['command_success']
                 try:
                     verify_result = subprocess.run(
-                        verify_cmd,
-                        shell=True,
+                        shlex.split(verify_cmd),
+                        shell=False,
                         capture_output=True,
                         text=True,
                         timeout=5
