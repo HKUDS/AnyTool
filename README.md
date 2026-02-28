@@ -100,12 +100,7 @@ AnyTool's Shell and GUI backends support two execution modes. You can configure 
 
 #### Local Mode (Default — no server needed)
 
-In **local mode**, Shell and GUI operations are executed directly in-process via `subprocess` / `asyncio`. This is the simplest setup — **no local server required**.
-
-```bash
-# Just run your agent — no extra steps!
-python your_agent.py
-```
+In **local mode**, Shell and GUI operations are executed directly in-process via `subprocess` / `asyncio`. This is the simplest setup — **no local server required**. Just use AnyTool as normal, see [Quick Integration](#3-quick-integration) for usage examples.
 
 > [!TIP]
 > **Use local mode when** you are running AnyTool on the same machine you want to control (your own laptop / desktop). This is the recommended mode for most users.
@@ -114,7 +109,7 @@ python your_agent.py
 
 In **server mode**, Shell and GUI operations are sent over HTTP to a running `local_server` Flask service. This is required when:
 
-- **Controlling a remote VM** (e.g., OSWorld benchmark environments) — the agent runs on your host, while the server runs inside the VM.
+- **Controlling a remote VM** — the agent runs on your host, while the server runs inside the VM.
 - **Process isolation / sandboxing** — you want script execution in a separate process for security or stability.
 - **Multi-machine deployments** — the agent and the execution environment are on different machines.
 
