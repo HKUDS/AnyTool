@@ -1,6 +1,7 @@
 from .provider import GUIProvider
 from .session import GUISession
 from .transport.connector import GUIConnector
+from .transport.local_connector import LocalGUIConnector
 
 try:
     from .anthropic_client import AnthropicGUIClient
@@ -15,7 +16,8 @@ __all__ = [
     "GUISession",
     
     # Transport layer
-    "GUIConnector"
+    "GUIConnector",
+    "LocalGUIConnector",
 ]
 
 # Add Anthropic modules to exports if available

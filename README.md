@@ -87,12 +87,38 @@ pip install -r requirements.txt
 > [!NOTE]
 > Create a `.env` file and add your API keys (refer to `anytool/.env.example`).
 
-### 2. Start Local Server
+### 2. Execution Mode: Local vs Server
 
-The **local server** is a lightweight Flask service that enables AnyTool to interact with your computer (GUI automation, Python/Bash execution, file operations, screen capture, etc.).
+AnyTool's Shell and GUI backends support two execution modes. You can configure the mode in `anytool/config/config_grounding.json`:
 
-> [!NOTE]
-> See [`anytool/local_server/README.md`](anytool/local_server/README.md) for complete API documentation and advanced configuration.
+```jsonc
+{
+  "shell": { "mode": "local", ... },  // or "server"
+  "gui":   { "mode": "local", ... }   // or "server"
+}
+```
+
+#### Local Mode (Default — no server needed)
+
+In **local mode**, Shell and GUI operations are executed directly in-process via `subprocess` / `asyncio`. This is the simplest setup — **no local server required**.
+
+```bash
+# Just run your agent — no extra steps!
+python your_agent.py
+```
+
+> [!TIP]
+> **Use local mode when** you are running AnyTool on the same machine you want to control (your own laptop / desktop). This is the recommended mode for most users.
+
+#### Server Mode (for remote VMs / isolation)
+
+In **server mode**, Shell and GUI operations are sent over HTTP to a running `local_server` Flask service. This is required when:
+
+- **Controlling a remote VM** (e.g., OSWorld benchmark environments) — the agent runs on your host, while the server runs inside the VM.
+- **Process isolation / sandboxing** — you want script execution in a separate process for security or stability.
+- **Multi-machine deployments** — the agent and the execution environment are on different machines.
+
+To use server mode, set `"mode": "server"` in `config_grounding.json`, then install platform-specific dependencies and start the server:
 
 > [!IMPORTANT]
 > **Platform-specific setup required**: Different operating systems need different dependencies for desktop control. Please install the required dependencies for your OS before starting the local server:
@@ -146,8 +172,19 @@ After installing the platform-specific dependencies, start the local server:
 python -m anytool.local_server.main
 ```
 
-> [!TIP]
-> **Local server is required** for GUI automation and Python/Bash execution. Without it, only MCP servers and web research capabilities are available.
+> [!NOTE]
+> See [`anytool/local_server/README.md`](anytool/local_server/README.md) for complete API documentation and advanced configuration.
+
+#### Mode Comparison
+
+| | Local Mode (`"local"`) | Server Mode (`"server"`) |
+|---|---|---|
+| **Setup** | Zero — just run your agent | Start `local_server` first |
+| **Use case** | Same-machine development | Remote VMs, sandboxing, multi-machine |
+| **Shell execution** | `asyncio.subprocess` in-process | HTTP → Flask → `subprocess` |
+| **GUI execution** | Direct pyautogui / ScreenshotHelper | HTTP → Flask → pyautogui |
+| **Dependencies** | Only core AnyTool | Core + Flask + platform deps |
+| **Network** | None required | HTTP between agent ↔ server |
 
 ### 3. Quick Integration
 

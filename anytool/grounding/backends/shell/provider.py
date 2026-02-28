@@ -2,6 +2,7 @@ from anytool.grounding.core.provider import Provider
 from anytool.grounding.core.types import BackendType, SessionConfig
 from .session import ShellSession
 from .transport.connector import ShellConnector
+from .transport.local_connector import LocalShellConnector
 from anytool.config import get_config
 from anytool.config.utils import get_config_value
 from anytool.platform.config import get_local_server_config
@@ -54,23 +55,32 @@ class ShellProvider(Provider[ShellSession]):
         # Load shell backend configuration
         shell_config = get_config().get_backend_config("shell")
         
-        # Get local_server config for default host and port
-        # This reads from LOCAL_SERVER_URL env var or config file
-        # Priority: connection_params > LOCAL_SERVER_URL env var > shell_config.default_port
-        local_server_config = get_local_server_config()
+        # Determine execution mode: "local" or "server"
+        mode = getattr(shell_config, "mode", "local")
         
-        # Use local_server_config['port'] as default (from LOCAL_SERVER_URL env var)
-        # This ensures OSWorld's VM port is used instead of hardcoded 5000
-        default_port = local_server_config.get('port', shell_config.default_port)
-        
-        # Create connector with config parameters
-        connector = ShellConnector(
-            vm_ip=get_config_value(session_config.connection_params, "vm_ip", local_server_config['host']),
-            port=get_config_value(session_config.connection_params, "port", default_port),
-            retry_times=shell_config.max_retries,
-            retry_interval=shell_config.retry_interval,
-            security_manager=self.security_manager
-        )
+        if mode == "local":
+            # ---------- LOCAL MODE ----------
+            # Execute scripts directly via subprocess, no server required.
+            logger.info("Shell backend using LOCAL mode (no server required)")
+            connector = LocalShellConnector(
+                retry_times=shell_config.max_retries,
+                retry_interval=shell_config.retry_interval,
+                security_manager=self.security_manager,
+            )
+        else:
+            # ---------- SERVER MODE ----------
+            # Connect to a running local_server via HTTP.
+            logger.info("Shell backend using SERVER mode (connecting to local_server)")
+            local_server_config = get_local_server_config()
+            default_port = local_server_config.get('port', shell_config.default_port)
+            
+            connector = ShellConnector(
+                vm_ip=get_config_value(session_config.connection_params, "vm_ip", local_server_config['host']),
+                port=get_config_value(session_config.connection_params, "port", default_port),
+                retry_times=shell_config.max_retries,
+                retry_interval=shell_config.retry_interval,
+                security_manager=self.security_manager,
+            )
         
         # Create session with config parameters
         session = ShellSession(

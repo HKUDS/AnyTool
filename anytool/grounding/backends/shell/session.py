@@ -1,7 +1,9 @@
 import re
+from typing import Union
 from anytool.grounding.core.types import BackendType
 from anytool.grounding.core.session import BaseSession
 from anytool.grounding.backends.shell.transport.connector import ShellConnector
+from anytool.grounding.backends.shell.transport.local_connector import LocalShellConnector
 from anytool.grounding.core.tool import BaseTool
 from anytool.grounding.core.security.policies import SecurityPolicyManager
 from anytool.llm import LLMClient
@@ -15,7 +17,7 @@ class ShellSession(BaseSession):
 
     def __init__(
         self, 
-        connector: ShellConnector, 
+        connector: Union[ShellConnector, LocalShellConnector], 
         *, 
         session_id: str, 
         security_manager: SecurityPolicyManager = None,

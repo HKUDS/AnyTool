@@ -1,5 +1,6 @@
 {
   "shell": {
+    "mode": "local",
     "timeout": 60,
     "max_retries": 3,
     "retry_interval": 3.0,
@@ -21,6 +22,7 @@
     "auto_install": true
   },
   "gui": {
+    "mode": "local",
     "timeout": 90,
     "max_retries": 3,
     "retry_interval": 5.0,

@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from anytool.grounding.core.types import BackendType, SessionConfig
 from anytool.grounding.core.provider import Provider
 from anytool.grounding.core.session import BaseSession
@@ -7,6 +7,7 @@ from anytool.config.utils import get_config_value
 from anytool.platform import get_local_server_config
 from anytool.utils.logging import Logger
 from .transport.connector import GUIConnector
+from .transport.local_connector import LocalGUIConnector
 from .session import GUISession
 
 logger = Logger.get_logger(__name__)
@@ -15,11 +16,15 @@ logger = Logger.get_logger(__name__)
 class GUIProvider(Provider):
     """
     Provider for GUI desktop environment.
-    Manages communication with desktop_env through HTTP API.
+    Manages communication with desktop_env through HTTP API or local in-process execution.
+    
+    Supports two modes:
+    - "local": Execute GUI operations directly in-process (no server needed)
+    - "server": Connect to a running local_server via HTTP API
     
     Supports automatic default session creation:
     - If no session exists, a default session will be created on first use
-    - Default session uses configuration from local_server/config.json or environment
+    - Default session uses configuration from config file or environment
     """
     
     DEFAULT_SID = BackendType.GUI.value
@@ -32,7 +37,7 @@ class GUIProvider(Provider):
             config: Provider configuration
         """
         super().__init__(BackendType.GUI, config)
-        self.connectors: Dict[str, GUIConnector] = {}
+        self.connectors: Dict[str, Union[GUIConnector, LocalGUIConnector]] = {}
     
     async def initialize(self) -> None:
         """
@@ -61,14 +66,11 @@ class GUIProvider(Provider):
         # Load GUI backend configuration
         gui_config = get_config().get_backend_config("gui")
         
-        # Get local server configuration (single source of truth)
-        # Priority: LOCAL_SERVER_URL env var > local_server/config.json > defaults
-        local_server_config = get_local_server_config()
+        # Determine execution mode: "local" or "server"
+        mode = getattr(gui_config, "mode", "local")
         
-        # Extract connection parameters from session_config, with fallback to local_server_config
+        # Extract connection parameters
         conn_params = session_config.connection_params
-        vm_ip = get_config_value(conn_params, 'vm_ip', local_server_config['host'])
-        server_port = get_config_value(conn_params, 'server_port', local_server_config['port'])
         timeout = get_config_value(conn_params, 'timeout', gui_config.timeout)
         retry_times = get_config_value(conn_params, 'retry_times', gui_config.max_retries)
         retry_interval = get_config_value(conn_params, 'retry_interval', gui_config.retry_interval)
@@ -81,15 +83,30 @@ class GUIProvider(Provider):
             gui_config.pkgs_prefix.format(failsafe=failsafe_str, command="{command}")
         )
         
-        # Create connector
-        connector = GUIConnector(
-            vm_ip=vm_ip,
-            server_port=server_port,
-            timeout=timeout,
-            retry_times=retry_times,
-            retry_interval=retry_interval,
-            pkgs_prefix=pkgs_prefix,
-        )
+        if mode == "local":
+            # ---------- LOCAL MODE ----------
+            logger.info("GUI backend using LOCAL mode (no server required)")
+            connector = LocalGUIConnector(
+                timeout=timeout,
+                retry_times=retry_times,
+                retry_interval=retry_interval,
+                pkgs_prefix=pkgs_prefix,
+            )
+        else:
+            # ---------- SERVER MODE ----------
+            logger.info("GUI backend using SERVER mode (connecting to local_server)")
+            local_server_config = get_local_server_config()
+            vm_ip = get_config_value(conn_params, 'vm_ip', local_server_config['host'])
+            server_port = get_config_value(conn_params, 'server_port', local_server_config['port'])
+            
+            connector = GUIConnector(
+                vm_ip=vm_ip,
+                server_port=server_port,
+                timeout=timeout,
+                retry_times=retry_times,
+                retry_interval=retry_interval,
+                pkgs_prefix=pkgs_prefix,
+            )
         
         # Create session
         session = GUISession(
@@ -103,7 +120,7 @@ class GUIProvider(Provider):
         self.connectors[session_config.session_name] = connector
         self._sessions[session_config.session_name] = session
         
-        logger.info(f"Created GUI session: {session_config.session_name}")
+        logger.info(f"Created GUI session: {session_config.session_name} (mode={mode})")
         return session
     
     async def close_session(self, session_name: str) -> None:

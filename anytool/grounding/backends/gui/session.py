@@ -1,9 +1,10 @@
-from typing import Dict, Any
+from typing import Dict, Any, Union
 import os
 from anytool.grounding.core.session import BaseSession
 from anytool.grounding.core.types import BackendType, SessionStatus, SessionConfig
 from anytool.utils.logging import Logger
 from .transport.connector import GUIConnector
+from .transport.local_connector import LocalGUIConnector
 from .tool import GUIAgentTool
 from .config import build_llm_config
 
@@ -18,7 +19,7 @@ class GUISession(BaseSession):
     
     def __init__(
         self,
-        connector: GUIConnector,
+        connector: Union[GUIConnector, LocalGUIConnector],
         session_id: str,
         backend_type: BackendType.GUI,
         config: SessionConfig,

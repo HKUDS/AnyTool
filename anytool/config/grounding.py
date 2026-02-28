@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any, List, Literal
 try:
     from pydantic import BaseModel, Field, field_validator
     PYDANTIC_V2 = True
@@ -44,6 +44,8 @@ class ShellConfig(BackendConfig):
     
     Attributes:
         enabled: Whether shell backend is enabled
+        mode: Execution mode - "local" runs scripts in-process via subprocess,
+              "server" connects to a running local_server via HTTP
         timeout: Default timeout for shell operations (seconds)
         max_retries: Maximum number of retry attempts for failed operations
         retry_interval: Wait time between retries (seconds)
@@ -51,8 +53,9 @@ class ShellConfig(BackendConfig):
         working_dir: Default working directory for bash scripts
         env: Default environment variables for shell operations
         conda_env: Conda environment name to activate before execution (optional)
-        default_port: Default port for shell server connection
+        default_port: Default port for shell server connection (only used in server mode)
     """
+    mode: Literal["local", "server"] = Field("local", description="Execution mode: 'local' (in-process subprocess) or 'server' (HTTP local_server)")
     retry_interval: float = Field(3.0, ge=0.1, le=60.0, description="Wait time between retries in seconds")
     default_shell: str = Field("/bin/bash", description="Default shell path")
     working_dir: Optional[str] = Field(None, description="Default working directory for bash scripts")
@@ -104,7 +107,13 @@ class MCPConfig(BackendConfig):
 
 class GUIConfig(BackendConfig):
     """
-    GUI backend configuration"""
+    GUI backend configuration
+    
+    Attributes:
+        mode: Execution mode - "local" runs GUI operations in-process,
+              "server" connects to a running local_server via HTTP
+    """
+    mode: Literal["local", "server"] = Field("local", description="Execution mode: 'local' (in-process) or 'server' (HTTP local_server)")
     retry_interval: float = Field(5.0, ge=0.1, le=60.0, description="Wait time between retries in seconds")
     driver_type: str = Field("pyautogui", description="GUI driver type")
     failsafe: bool = Field(False, description="Whether to enable pyautogui failsafe mode")
