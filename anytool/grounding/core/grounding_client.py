@@ -526,7 +526,7 @@ class GroundingClient:
         if session_name not in self._session_info:
             raise ErrorCode.SESSION_NOT_FOUND(session_name)
         backend = self._session_info[session_name].backend_type
-        return await self.list_tools(backend, session_name, use_cache)
+        return await self.list_tools(backend, session_name, use_cache=use_cache)
 
     async def list_all_backend_tools(
         self,
