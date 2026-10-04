@@ -90,6 +90,7 @@ class MCPToolCache:
             with open(self.cache_path, "w", encoding="utf-8") as f:
                 json.dump(cache_data, f, indent=2, ensure_ascii=False)
             self._cache = cache_data
+            self.clear_sanitized()
             logger.info(f"Saved MCP tool cache: {len(servers)} servers")
         except Exception as e:
             logger.error(f"Failed to save cache: {e}")
@@ -119,6 +120,7 @@ class MCPToolCache:
             with open(self.cache_path, "w", encoding="utf-8") as f:
                 json.dump(cache, f, indent=2, ensure_ascii=False)
             self._cache = cache
+            self.clear_sanitized()
             logger.debug(f"Saved {len(tools)} tools for server '{server_name}'")
         except Exception as e:
             logger.error(f"Failed to save cache for server '{server_name}': {e}")
@@ -143,6 +145,7 @@ class MCPToolCache:
         if self.cache_path.exists():
             self.cache_path.unlink()
         self._cache = None
+        self.clear_sanitized()
         logger.info("MCP tool cache cleared")
     
     def save_failed_server(self, server_name: str, error: str):
