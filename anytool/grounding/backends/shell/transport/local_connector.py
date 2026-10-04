@@ -276,7 +276,7 @@ class LocalShellConnector(BaseConnector[Any]):
             temp_filename = f"/tmp/python_exec_{suffix}.py"
 
         try:
-            with open(temp_filename, "w") as f:
+            with open(temp_filename, "w", encoding="utf-8") as f:
                 f.write(code)
 
             logger.info(
@@ -352,7 +352,7 @@ class LocalShellConnector(BaseConnector[Any]):
             temp_filename = f"/tmp/bash_exec_{suffix}.sh"
 
         try:
-            with open(temp_filename, "w") as f:
+            with open(temp_filename, "w", encoding="utf-8") as f:
                 f.write(final_script)
             os.chmod(temp_filename, 0o755)
 

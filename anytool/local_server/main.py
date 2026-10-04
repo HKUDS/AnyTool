@@ -433,7 +433,7 @@ def run_python():
         temp_filename = f"/tmp/python_exec_{uuid.uuid4().hex}.py"
     
     try:
-        with open(temp_filename, 'w') as f:
+        with open(temp_filename, 'w', encoding='utf-8') as f:
             f.write(code)
         
         # Prepare environment variables
@@ -537,7 +537,7 @@ def run_bash_script():
         # Wrap script with conda activation if needed
         final_script = wrap_script_with_conda(script, conda_env)
         
-        with open(temp_filename, 'w') as f:
+        with open(temp_filename, 'w', encoding='utf-8') as f:
             f.write(final_script)
         
         os.chmod(temp_filename, 0o755)
