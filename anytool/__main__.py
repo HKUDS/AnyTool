@@ -145,7 +145,6 @@ def _create_argument_parser() -> argparse.ArgumentParser:
         description='AnyTool - Universal Tool-Use Layer for AI Agents',
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    w
     # Subcommands
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
