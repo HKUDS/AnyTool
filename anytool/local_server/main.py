@@ -1,5 +1,6 @@
 import os
 import platform
+import sys
 import shlex
 import subprocess
 import signal
@@ -479,7 +480,7 @@ def run_python():
                 )
         else:
             # No conda activation needed
-            python_cmd = 'python' if platform_name == "Windows" else 'python3'
+            python_cmd = sys.executable
             result = subprocess.run(
                 [python_cmd, temp_filename],
                 stdout=subprocess.PIPE,

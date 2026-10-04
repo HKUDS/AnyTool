@@ -11,6 +11,7 @@ work without any changes.
 import asyncio
 import os
 import platform
+import sys
 import tempfile
 import uuid
 from typing import Any, Optional, Dict
@@ -296,7 +297,7 @@ class LocalShellConnector(BaseConnector[Any]):
                         full_cmd, timeout=timeout, working_dir=working_dir, env=env
                     )
                 else:
-                    python_cmd = "python" if platform_name == "Windows" else "python3"
+                    python_cmd = sys.executable
                     result = await self._run_subprocess(
                         [python_cmd, temp_filename],
                         timeout=timeout,
@@ -304,7 +305,7 @@ class LocalShellConnector(BaseConnector[Any]):
                         env=env,
                     )
             else:
-                python_cmd = "python" if platform_name == "Windows" else "python3"
+                python_cmd = sys.executable
                 result = await self._run_subprocess(
                     [python_cmd, temp_filename],
                     timeout=timeout,

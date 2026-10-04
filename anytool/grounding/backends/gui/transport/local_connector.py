@@ -12,6 +12,7 @@ work without any changes.
 import asyncio
 import os
 import platform
+import sys
 import re
 import tempfile
 import uuid
@@ -231,7 +232,7 @@ class LocalGUIConnector(BaseConnector[Any]):
             full_command = self.pkgs_prefix.format(command=fixed_command)
 
             async def _execute():
-                python_cmd = "python" if platform_name == "Windows" else "python3"
+                python_cmd = sys.executable
                 proc = await asyncio.create_subprocess_exec(
                     python_cmd, "-c", full_command,
                     stdout=asyncio.subprocess.PIPE,
