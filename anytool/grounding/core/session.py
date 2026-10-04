@@ -109,7 +109,7 @@ class BaseSession(ABC):
     @property
     def info(self) -> SessionInfo:
         return SessionInfo(
-            session_id=self.session_id,
+            session_name=self.session_id,
             backend_type=getattr(self, "backend_type", BackendType.NOT_SET),
             status=self.status,
             created_at=self._created_at,
