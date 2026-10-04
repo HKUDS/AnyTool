@@ -77,6 +77,9 @@ class GroundingClient:
                     continue
 
                 backend = BackendType(be_name.lower())
+                backend_cfg = self._config.get_backend_config(be_name)
+                if not backend_cfg.enabled:
+                    continue
                 
                 # Skip system backend - it will be registered separately
                 if backend == BackendType.SYSTEM:
@@ -95,7 +98,6 @@ class GroundingClient:
                     self._logger.error("Import provider failed: %s (%s)", cls_path, e)
                     continue
 
-                backend_cfg = self._config.get_backend_config(be_name)
                 provider: Provider = prov_cls(backend_cfg)
                 self._registry.register(provider)
     
