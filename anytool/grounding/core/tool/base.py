@@ -148,13 +148,17 @@ class BaseTool(ABC):
             await self._auto_record_execution(kwargs, result, time.time() - start)
             
             return result
-        except Exception as e:                    
+        except Exception as e:
+            elapsed = time.time() - start
+            result = ToolResult(
+                status=ToolStatus.ERROR,
+                error=str(e),
+                execution_time=elapsed,
+                metadata={"tool": self.schema.name},
+            )
+            await self._auto_record_execution(kwargs, result, elapsed)
             if self.handle_errors:
-                return ToolResult(
-                    status=ToolStatus.ERROR,
-                    error=str(e),
-                    metadata={"tool": self.schema.name},
-                )
+                return result
             raise
 
     # to be implemented by subclasses
