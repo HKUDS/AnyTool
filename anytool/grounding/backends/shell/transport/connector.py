@@ -61,7 +61,7 @@ class ShellConnector(AioHttpConnector):
         for attempt in range(1, self.retry_times + 1):
             try:
                 # Pass timeout parameter to server
-                result = await self.invoke(name, payload | {"timeout": script_timeout})
+                result = await self.invoke(name, payload | {"timeout": script_timeout}, timeout=http_timeout)
                 logger.info("%s executed successfully (attempt %d/%d)", name, attempt, self.retry_times)
                 return result
             except asyncio.TimeoutError as exc:

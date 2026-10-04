@@ -100,7 +100,7 @@ class AioHttpConnector(BaseConnector[aiohttp.ClientSession]):
     async def request(self, method: str, path: str, **kw) -> aiohttp.ClientResponse:
         return await self._request(method, path, **kw)
 
-    async def invoke(self, name: str, params: dict[str, Any]) -> Any:
+    async def invoke(self, name: str, params: dict[str, Any], **kw) -> Any:
         """
         Generic tool-invocation mapping for HTTP back-ends.
 
@@ -118,26 +118,26 @@ class AioHttpConnector(BaseConnector[aiohttp.ClientSession]):
         path = verb_path[1] if len(verb_path) == 2 else verb_path[0]
 
         if verb == "GET_BYTES":
-            return await self.get_bytes(path, params=params)
+            return await self.get_bytes(path, params=params, **kw)
 
         if verb == "GET_TEXT":
-            resp = await self._request("GET", path, params=params)
+            resp = await self._request("GET", path, params=params, **kw)
             resp.raise_for_status()
             return await resp.text()
 
         if verb in {"GET", "POST"} and len(verb_path) == 2:
             if verb == "GET":
-                return await self.get_json(path, params=params)
-            return await self.post_json(path, payload=params)
+                return await self.get_json(path, params=params, **kw)
+            return await self.post_json(path, payload=params, **kw)
 
         if verb in {"PUT", "PATCH", "DELETE"} and len(verb_path) == 2:
-            return await self._handle_other_json(verb, path, params)
+            return await self._handle_other_json(verb, path, params, **kw)
 
-        return await self.post_json(name, payload=params)
+        return await self.post_json(name, payload=params, **kw)
 
-    async def _handle_other_json(self, method: str, path: str, params: dict[str, Any]):
+    async def _handle_other_json(self, method: str, path: str, params: dict[str, Any], **kw):
         """Fallback implementation for PUT/PATCH/DELETE returning JSON/text, can be overridden by subclasses."""
-        resp = await self._request(method, path, json=params)
+        resp = await self._request(method, path, json=params, **kw)
         resp.raise_for_status()
         try:
             return await resp.json()
