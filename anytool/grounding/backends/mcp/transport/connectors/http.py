@@ -502,6 +502,21 @@ class HttpConnector(MCPBaseConnector):
     # Override MCP Methods for JSON-RPC Support
     # =====================
 
+    async def _list_jsonrpc_pages(self, field: str) -> List[Dict]:
+        items = []
+        params = {}
+        seen = set()
+        while True:
+            result = await self._send_jsonrpc_request(f"{field}/list", params)
+            items.extend(result.get(field, []))
+            cursor = result.get("nextCursor")
+            if cursor is None:
+                return items
+            if cursor in seen:
+                raise RuntimeError(f"Repeated MCP pagination cursor while listing {field}")
+            seen.add(cursor)
+            params = {"cursor": cursor}
+
     async def initialize(self) -> Dict[str, Any]:
         """Initialize the MCP session."""
         if not self._use_jsonrpc:
@@ -521,23 +536,20 @@ class HttpConnector(MCPBaseConnector):
         # List tools
         if capabilities.get("tools"):
             try:
-                tools_result = await self._send_jsonrpc_request("tools/list", {})
-                self._tools = self._parse_tools_from_json(tools_result.get("tools", []))
+                self._tools = self._parse_tools_from_json(await self._list_jsonrpc_pages("tools"))
             except Exception:
                 self._tools = []
         else:
             # Try anyway - some servers don't advertise capabilities correctly
             try:
-                tools_result = await self._send_jsonrpc_request("tools/list", {})
-                self._tools = self._parse_tools_from_json(tools_result.get("tools", []))
+                self._tools = self._parse_tools_from_json(await self._list_jsonrpc_pages("tools"))
             except Exception:
                 self._tools = []
         
         # List resources
         if capabilities.get("resources"):
             try:
-                resources_result = await self._send_jsonrpc_request("resources/list", {})
-                self._resources = self._parse_resources_from_json(resources_result.get("resources", []))
+                self._resources = self._parse_resources_from_json(await self._list_jsonrpc_pages("resources"))
             except Exception:
                 self._resources = []
         else:
@@ -546,8 +558,7 @@ class HttpConnector(MCPBaseConnector):
         # List prompts
         if capabilities.get("prompts"):
             try:
-                prompts_result = await self._send_jsonrpc_request("prompts/list", {})
-                self._prompts = self._parse_prompts_from_json(prompts_result.get("prompts", []))
+                self._prompts = self._parse_prompts_from_json(await self._list_jsonrpc_pages("prompts"))
             except Exception:
                 self._prompts = []
         else:
@@ -582,8 +593,7 @@ class HttpConnector(MCPBaseConnector):
         
         await self._ensure_connected()
         try:
-            tools_result = await self._send_jsonrpc_request("tools/list", {})
-            self._tools = self._parse_tools_from_json(tools_result.get("tools", []))
+            self._tools = self._parse_tools_from_json(await self._list_jsonrpc_pages("tools"))
             return self._tools
         except Exception as e:
             logger.error(f"Error listing tools: {e}")
@@ -635,8 +645,7 @@ class HttpConnector(MCPBaseConnector):
         
         await self._ensure_connected()
         try:
-            resources_result = await self._send_jsonrpc_request("resources/list", {})
-            self._resources = self._parse_resources_from_json(resources_result.get("resources", []))
+            self._resources = self._parse_resources_from_json(await self._list_jsonrpc_pages("resources"))
             return self._resources
         except Exception as e:
             logger.error(f"Error listing resources: {e}")
@@ -658,8 +667,7 @@ class HttpConnector(MCPBaseConnector):
         
         await self._ensure_connected()
         try:
-            prompts_result = await self._send_jsonrpc_request("prompts/list", {})
-            self._prompts = self._parse_prompts_from_json(prompts_result.get("prompts", []))
+            self._prompts = self._parse_prompts_from_json(await self._list_jsonrpc_pages("prompts"))
             return self._prompts
         except Exception as e:
             logger.error(f"Error listing prompts: {e}")

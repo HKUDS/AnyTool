@@ -292,6 +292,21 @@ class MCPBaseConnector(BaseConnector[ClientSession]):
         logger.error(error_msg)
         raise RuntimeError(error_msg) from last_error
 
+    async def _list_pages(self, method: str, field: str) -> list:
+        items = []
+        cursor = None
+        seen = set()
+        while True:
+            call = getattr(self.client_session, method)
+            result = await call(cursor=cursor) if cursor is not None else await call()
+            items.extend(getattr(result, field))
+            cursor = result.nextCursor
+            if cursor is None:
+                return items
+            if cursor in seen:
+                raise RuntimeError(f"Repeated MCP pagination cursor while listing {field}")
+            seen.add(cursor)
+
     async def list_tools(self) -> list[Tool]:
         """List all available tools from the MCP implementation."""
 
@@ -300,8 +315,7 @@ class MCPBaseConnector(BaseConnector[ClientSession]):
 
         logger.debug("Listing tools")
         try:
-            result = await self.client_session.list_tools()
-            return result.tools
+            return await self._list_pages("list_tools", "tools")
         except McpError as e:
             logger.error(f"Error listing tools: {e}")
             return []
@@ -313,8 +327,7 @@ class MCPBaseConnector(BaseConnector[ClientSession]):
 
         logger.debug("Listing resources")
         try:
-            result = await self.client_session.list_resources()
-            return result.resources
+            return await self._list_pages("list_resources", "resources")
         except McpError as e:
             logger.error(f"Error listing resources: {e}")
             return []
@@ -335,8 +348,7 @@ class MCPBaseConnector(BaseConnector[ClientSession]):
 
         logger.debug("Listing prompts")
         try:
-            result = await self.client_session.list_prompts()
-            return result.prompts
+            return await self._list_pages("list_prompts", "prompts")
         except McpError as e:
             logger.error(f"Error listing prompts: {e}")
             return []
