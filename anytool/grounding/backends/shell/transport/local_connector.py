@@ -19,6 +19,7 @@ from anytool.grounding.core.transport.connectors.base import BaseConnector
 from anytool.grounding.core.transport.task_managers.noop import NoOpConnectionManager
 from anytool.grounding.core.security import SecurityPolicyManager
 from anytool.utils.logging import Logger
+from anytool.utils.subprocess import communicate_with_timeout, process_group_options
 
 logger = Logger.get_logger(__name__)
 
@@ -156,10 +157,9 @@ class LocalShellConnector(BaseConnector[Any]):
                 stderr=asyncio.subprocess.PIPE,
                 cwd=cwd,
                 env=exec_env,
+                **process_group_options(),
             )
-            stdout_b, stderr_b = await asyncio.wait_for(
-                proc.communicate(), timeout=timeout
-            )
+            stdout_b, stderr_b = await communicate_with_timeout(proc, timeout)
             stdout = stdout_b.decode("utf-8", errors="replace") if stdout_b else ""
             stderr = stderr_b.decode("utf-8", errors="replace") if stderr_b else ""
             returncode = proc.returncode or 0
@@ -210,10 +210,9 @@ class LocalShellConnector(BaseConnector[Any]):
                 stderr=asyncio.subprocess.STDOUT,
                 cwd=cwd,
                 env=exec_env,
+                **process_group_options(),
             )
-            stdout_b, _ = await asyncio.wait_for(
-                proc.communicate(), timeout=timeout
-            )
+            stdout_b, _ = await communicate_with_timeout(proc, timeout)
             stdout = stdout_b.decode("utf-8", errors="replace") if stdout_b else ""
             returncode = proc.returncode or 0
 

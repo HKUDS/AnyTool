@@ -20,6 +20,7 @@ from typing import Any, Dict, Optional
 from anytool.grounding.core.transport.connectors.base import BaseConnector
 from anytool.grounding.core.transport.task_managers.noop import NoOpConnectionManager
 from anytool.utils.logging import Logger
+from anytool.utils.subprocess import communicate_with_timeout, process_group_options
 
 logger = Logger.get_logger(__name__)
 
@@ -236,10 +237,9 @@ class LocalGUIConnector(BaseConnector[Any]):
                     python_cmd, "-c", full_command,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
+                    **process_group_options(),
                 )
-                stdout_b, stderr_b = await asyncio.wait_for(
-                    proc.communicate(), timeout=self.timeout
-                )
+                stdout_b, stderr_b = await communicate_with_timeout(proc, self.timeout)
                 stdout = stdout_b.decode("utf-8", errors="replace") if stdout_b else ""
                 stderr = stderr_b.decode("utf-8", errors="replace") if stderr_b else ""
                 returncode = proc.returncode or 0
