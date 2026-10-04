@@ -125,44 +125,8 @@ class LocalGUIConnector(BaseConnector[Any]):
 
     @staticmethod
     def _fix_pyautogui_less_than_bug(command: str) -> str:
-        """Fix PyAutoGUI '<' character bug."""
-        press_pattern = r'pyautogui\.press\(["\'](?:<|\\u003c)["\']\)'
-
-        def replace_press_less_than(match):
-            return 'pyautogui.hotkey("shift", ",")'
-
-        command = re.sub(press_pattern, replace_press_less_than, command)
-
-        typewrite_pattern = r'pyautogui\.typewrite\((["\'])(.*?)\1\)'
-
-        def process_typewrite_match(match):
-            quote_char = match.group(1)
-            content = match.group(2)
-            try:
-                decoded_content = content.encode("utf-8").decode("unicode_escape")
-                content = decoded_content
-            except UnicodeDecodeError:
-                pass
-            if "<" not in content:
-                return match.group(0)
-            parts = content.split("<")
-            result_parts = []
-            for i, part in enumerate(parts):
-                if i == 0:
-                    if part:
-                        result_parts.append(
-                            f"pyautogui.typewrite({quote_char}{part}{quote_char})"
-                        )
-                else:
-                    result_parts.append('pyautogui.hotkey("shift", ",")')
-                    if part:
-                        result_parts.append(
-                            f"pyautogui.typewrite({quote_char}{part}{quote_char})"
-                        )
-            return "; ".join(result_parts)
-
-        command = re.sub(typewrite_pattern, process_typewrite_match, command)
-        return command
+        from .pyautogui_commands import fix_less_than_typing
+        return fix_less_than_typing(command)
 
     # ------------------------------------------------------------------
     # Image response validation (same as GUIConnector)
