@@ -2,6 +2,7 @@ import subprocess
 import os
 from typing import Dict, Any, Optional, List
 from anytool.utils.logging import Logger
+from anytool.local_server.utils.recording import start_recording_stderr, read_recording_stderr, finish_recording_stderr
 from PIL import Image
 import pyautogui
 
@@ -481,10 +482,11 @@ class LinuxAdapter:
             )
             
             import time
+            start_recording_stderr(process)
             time.sleep(1)
             
             if process.poll() is not None:
-                error_output = process.stderr.read() if process.stderr else "Unknown error"
+                error_output = read_recording_stderr(process)
                 return {
                     'status': 'error',
                     'message': f'Failed to start recording: {error_output}'
@@ -535,6 +537,8 @@ class LinuxAdapter:
                 'status': 'error',
                 'message': str(e)
             }
+        finally:
+            finish_recording_stderr(process)
     
     def get_running_applications(self) -> List[Dict[str, str]]:
         """

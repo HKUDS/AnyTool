@@ -2,6 +2,7 @@ import subprocess
 import os
 from typing import Dict, Any, Optional, List
 from anytool.utils.logging import Logger
+from anytool.local_server.utils.recording import start_recording_stderr, read_recording_stderr, finish_recording_stderr
 
 try:
     import AppKit
@@ -493,11 +494,12 @@ class MacOSAdapter:
             )
             
             import time
+            start_recording_stderr(process)
             time.sleep(1.5)  # Wait for a longer time to ensure ffmpeg starts
 
             # Check if process exited early
             if process.poll() is not None:
-                err = process.stderr.read() if process.stderr else ""
+                err = read_recording_stderr(process)
                 logger.error(f"FFmpeg exited early with stderr: {err}")
                 
                 if "Operation not permitted" in err or "Screen Recording" in err:
@@ -589,6 +591,8 @@ class MacOSAdapter:
                 'status': 'error',
                 'message': str(e)
             }
+        finally:
+            finish_recording_stderr(process)
     
     def list_windows(self) -> List[Dict[str, Any]]:
         """
