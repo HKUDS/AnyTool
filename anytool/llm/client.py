@@ -280,33 +280,10 @@ async def _execute_tool_call(
     if isinstance(arguments, str):
         arguments = json.loads(arguments or "{}")
     
-    # Filter out parameters that are not in the tool's schema
-    if isinstance(arguments, dict) and tool.schema.parameters:
-        # Get valid parameter names from tool schema (JSON Schema format)
-        schema_params = tool.schema.parameters
-        valid_params = set()
-        
-        if isinstance(schema_params, dict) and "properties" in schema_params:
-            valid_params = set(schema_params["properties"].keys())
-        
-        # Check for invalid parameters
-        invalid_params = []
-        for param_name in list(arguments.keys()):
-            if param_name == "skip_visual_analysis":
-                invalid_params.append(param_name)
-                continue
-            
-            # Check if parameter is in the tool's schema
-            if valid_params and param_name not in valid_params:
-                invalid_params.append(param_name)
-        
-        # Remove invalid parameters
-        for param in invalid_params:
-            arguments.pop(param)
-            logger.debug(
-                f"Removed parameter '{param}' from {tool.schema.name} "
-                f"(not in tool schema)"
-            )
+    # Remove the orchestration-only flag; let the tool validate its full schema.
+    if isinstance(arguments, dict):
+        arguments = dict(arguments)
+        arguments.pop("skip_visual_analysis", None)
 
     return await tool.invoke(
         parameters=arguments,
