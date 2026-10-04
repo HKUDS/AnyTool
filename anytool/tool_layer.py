@@ -33,7 +33,7 @@ class AnyToolConfig:
     
     # Grounding Configuration
     grounding_config_path: Optional[str] = None
-    grounding_max_iterations: int = 20
+    grounding_max_iterations: Optional[int] = None
     grounding_system_prompt: Optional[str] = None
     
     # Backend Configuration
@@ -57,10 +57,18 @@ class AnyToolConfig:
     
     def __post_init__(self):
         """Validate configuration"""
+        self._grounding_max_iterations_explicit = self.grounding_max_iterations is not None
+        if self.grounding_max_iterations is None:
+            object.__setattr__(self, "grounding_max_iterations", 20)
         if not self.llm_model:
             raise ValueError("llm_model is required")
         
         logger.debug(f"AnyToolConfig initialized with model: {self.llm_model}")
+
+    def __setattr__(self, name, value):
+        if name == "grounding_max_iterations" and hasattr(self, "_grounding_max_iterations_explicit"):
+            object.__setattr__(self, "_grounding_max_iterations_explicit", value is not None)
+        object.__setattr__(self, name, value)
 
 
 class AnyTool:
@@ -139,16 +147,19 @@ class AnyTool:
             agent_config = get_agent_config("GroundingAgent")
             if agent_config:
                 # Use config file values, but command-line args (self.config) take priority
-                max_iterations = agent_config.get("max_iterations", self.config.grounding_max_iterations)
+                if self.config._grounding_max_iterations_explicit:
+                    max_iterations = self.config.grounding_max_iterations
+                else:
+                    max_iterations = agent_config.get("max_iterations", 20)
                 # Command-line backend_scope > config file > default
                 backend_scope = self.config.backend_scope or agent_config.get("backend_scope") or ["gui", "shell", "mcp", "web", "system"]
                 visual_analysis_timeout = agent_config.get("visual_analysis_timeout", 30.0)
                 # Update config with values from config file
-                self.config.grounding_max_iterations = max_iterations
+                object.__setattr__(self.config, "grounding_max_iterations", max_iterations)
                 logger.info(f"Loaded GroundingAgent config from config_agents.json (max_iterations={max_iterations}, visual_analysis_timeout={visual_analysis_timeout}s)")
             else:
                 # Fall back to AnyToolConfig values
-                max_iterations = self.config.grounding_max_iterations
+                max_iterations = self.config.grounding_max_iterations if self.config.grounding_max_iterations is not None else 20
                 backend_scope = self.config.backend_scope or ["gui", "shell", "mcp", "web", "system"]
                 visual_analysis_timeout = 30.0
                 logger.warning(f"config_agents.json not found, using default config (max_iterations={max_iterations})")
