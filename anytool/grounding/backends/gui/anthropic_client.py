@@ -232,11 +232,19 @@ class AnthropicGUIClient:
             if isinstance(last_content, list) and any(
                 block.get("type") == "tool_use" for block in last_content
             ):
-                tool_use_id = next(
-                    block["id"] for block in last_content 
-                    if block.get("type") == "tool_use"
-                )
-                self._add_tool_result(tool_use_id, "Success", resized_screenshot)
+                tool_uses = [block for block in last_content if block.get("type") == "tool_use"]
+                execution = action_history[-1].get("execution_result", {}) if action_history else {}
+                for index, block in enumerate(tool_uses):
+                    if index:
+                        result, failed = "Not executed: only one action is supported per planning step.", True
+                    elif block.get("input", {}).get("action") == "screenshot":
+                        result, failed = "Screenshot captured", False
+                    elif execution:
+                        failed = execution.get("status") != "success"
+                        result = (execution.get("error") or "Action failed") if failed else "Success"
+                    else:
+                        result, failed = "Execution result unavailable", True
+                    self._add_tool_result(block["id"], result, resized_screenshot if index == 0 else None, is_error=failed)
         
         # Define tools and betas for claude-sonnet-4-5 with computer-use-2025-01-24
         tools = [{
@@ -305,6 +313,7 @@ class AnthropicGUIClient:
                         model=model_name,
                         system=[system],
                         tools=tools,
+                        tool_choice={"type": "auto", "disable_parallel_tool_use": True},
                         betas=betas,
                         extra_body=extra_body
                     )
@@ -351,6 +360,7 @@ class AnthropicGUIClient:
                         model=model_name,
                         system=[system],
                         tools=tools,
+                        tool_choice={"type": "auto", "disable_parallel_tool_use": True},
                         betas=betas,
                         extra_body=extra_body
                     )
@@ -404,7 +414,9 @@ class AnthropicGUIClient:
         self,
         tool_use_id: str,
         result: str,
-        screenshot_bytes: Optional[bytes] = None
+        screenshot_bytes: Optional[bytes] = None,
+        *,
+        is_error: bool = False,
     ):
         """
         Add tool result to message history.
@@ -431,13 +443,16 @@ class AnthropicGUIClient:
         tool_result_content = [{
             "type": "tool_result",
             "tool_use_id": tool_use_id,
+            "is_error": is_error,
             "content": content_list
         }]
         
-        self.messages.append({
-            "role": "user",
-            "content": tool_result_content
-        })
+        if (self.messages and self.messages[-1]["role"] == "user"
+                and isinstance(self.messages[-1]["content"], list)
+                and all(block.get("type") == "tool_result" for block in self.messages[-1]["content"])):
+            self.messages[-1]["content"].extend(tool_result_content)
+        else:
+            self.messages.append({"role": "user", "content": tool_result_content})
     
     def _parse_computer_tool_use(self, tool_input: Dict[str, Any]) -> Optional[str]:
         """
