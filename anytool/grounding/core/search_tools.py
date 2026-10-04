@@ -881,8 +881,12 @@ class SearchCoordinator(BaseTool):
                 server = "unknown"
             server_tools[server].append(t)
 
-        # Build tool name -> tool object mapping
-        tool_name_map: Dict[str, BaseTool] = {t.name: t for t in tools}
+        # Tool names are only unique within a server.
+        tool_name_map = {
+            (server, tool.name): tool
+            for server, tool_list in server_tools.items()
+            for tool in tool_list
+        }
 
         # Build server description with tool names
         lines: list[str] = ["Available MCP servers:"]
@@ -973,8 +977,8 @@ Return ONLY a JSON object (no markdown, no explanation):
             if server_name in server_tools:
                 server_tool_names = {t.name for t in server_tools[server_name]}
                 for tool_name in tool_names:
-                    if tool_name in server_tool_names and tool_name in tool_name_map:
-                        utility_tools.append(tool_name_map[tool_name])
+                    if tool_name in server_tool_names:
+                        utility_tools.append(tool_name_map[(server_name, tool_name)])
         
         # Collect domain tools (entire servers)
         domain_tools = []
