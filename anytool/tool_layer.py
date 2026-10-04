@@ -141,7 +141,11 @@ class AnyTool:
                 # Use config file values, but command-line args (self.config) take priority
                 max_iterations = agent_config.get("max_iterations", self.config.grounding_max_iterations)
                 # Command-line backend_scope > config file > default
-                backend_scope = self.config.backend_scope or agent_config.get("backend_scope") or ["gui", "shell", "mcp", "web", "system"]
+                backend_scope = self.config.backend_scope
+                if backend_scope is None:
+                    backend_scope = agent_config.get("backend_scope")
+                if backend_scope is None:
+                    backend_scope = ["gui", "shell", "mcp", "web", "system"]
                 visual_analysis_timeout = agent_config.get("visual_analysis_timeout", 30.0)
                 # Update config with values from config file
                 self.config.grounding_max_iterations = max_iterations
@@ -149,7 +153,7 @@ class AnyTool:
             else:
                 # Fall back to AnyToolConfig values
                 max_iterations = self.config.grounding_max_iterations
-                backend_scope = self.config.backend_scope or ["gui", "shell", "mcp", "web", "system"]
+                backend_scope = self.config.backend_scope if self.config.backend_scope is not None else ["gui", "shell", "mcp", "web", "system"]
                 visual_analysis_timeout = 30.0
                 logger.warning(f"config_agents.json not found, using default config (max_iterations={max_iterations})")
             

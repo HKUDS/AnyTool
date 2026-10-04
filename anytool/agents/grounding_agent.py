@@ -49,7 +49,7 @@ class GroundingAgent(BaseAgent):
         """
         super().__init__(
             name=name,
-            backend_scope=backend_scope or ["gui", "shell", "mcp", "web", "system"],
+            backend_scope=backend_scope if backend_scope is not None else ["gui", "shell", "mcp", "web", "system"],
             llm_client=llm_client,
             grounding_client=grounding_client,
             recording_manager=recording_manager
