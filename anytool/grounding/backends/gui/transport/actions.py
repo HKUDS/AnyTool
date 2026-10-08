@@ -204,7 +204,15 @@ def build_pyautogui_command(action_type: str, parameters: Dict[str, Any]) -> str
     elif action_type == "SCROLL":
         dx = parameters.get("dx", 0)
         dy = parameters.get("dy", 0)
-        return f"pyautogui.scroll({dy})"
+        if not dx:
+            return f"pyautogui.scroll({dy})"
+        # PyAutoGUI's Windows hscroll delegates to vertical scrolling. Select
+        # the backend on the execution host, which may differ from this client.
+        horizontal = (
+            f"__import__('ctypes').windll.user32.mouse_event(0x1000, 0, 0, int({dx}) * 120, 0)"
+            f" if __import__('sys').platform == 'win32' else pyautogui.hscroll({dx})"
+        )
+        return f"pyautogui.failSafeCheck(); ({horizontal}); pyautogui.scroll({dy})"
     
     elif action_type == "TYPING":
         text = parameters.get("text", "")
