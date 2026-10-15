@@ -19,6 +19,7 @@ class MCPToolCache:
     """Simple file-based cache for MCP tool metadata."""
     
     CACHE_VERSION = 1
+    SANITIZED_CACHE_VERSION = 2
     
     def __init__(self, cache_path: Optional[Path] = None, sanitized_cache_path: Optional[Path] = None):
         self.cache_path = cache_path or DEFAULT_CACHE_PATH
@@ -192,6 +193,9 @@ class MCPToolCache:
         try:
             with open(self.sanitized_cache_path, "r", encoding="utf-8") as f:
                 self._sanitized_cache = json.load(f)
+            if self._sanitized_cache.get("version") != self.SANITIZED_CACHE_VERSION:
+                self._sanitized_cache = {"version": self.SANITIZED_CACHE_VERSION, "servers": {}}
+                return self._sanitized_cache
             logger.info(f"Loaded sanitized MCP tool cache: {len(self._sanitized_cache.get('servers', {}))} servers")
             return self._sanitized_cache
         except Exception as e:
@@ -209,7 +213,7 @@ class MCPToolCache:
         self._ensure_dir()
         
         cache_data = {
-            "version": self.CACHE_VERSION,
+            "version": self.SANITIZED_CACHE_VERSION,
             "updated_at": datetime.now().isoformat(),
             "sanitized": True,
             "servers": servers,
