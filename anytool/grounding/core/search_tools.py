@@ -319,7 +319,10 @@ class ToolRanker:
         if tool_name not in self._structured_cache[backend][server]:
             return None
         
-        return self._structured_cache[backend][server][tool_name].get("embedding")
+        cached = self._structured_cache[backend][server][tool_name]
+        if cached.get("description") != (tool.description or ""):
+            return None
+        return cached.get("embedding")
     
     def _set_embedding(self, tool: BaseTool, embedding: np.ndarray) -> None:
         """Store embedding in structured cache."""
@@ -664,11 +667,22 @@ class SearchCoordinator(BaseTool):
         self._last_search_debug_info = debug_info
 
         # Cache check
-        cache_key = (id(candidate_tools), task_prompt, mode, max_tools)
+        # Retain actual tool identities and their current search metadata. A list
+        # identity can be reused, and its contents may change between searches.
+        candidate_key = tuple(
+            (tool, tool.schema.model_dump_json(),
+             (tool.runtime_info.backend, tool.runtime_info.session_name, tool.runtime_info.server_name)
+             if tool.is_bound else None)
+            for tool in candidate_tools
+        )
+        quality_count = self._quality_manager._global_execution_count if self._quality_manager else None
+        cache_key = (candidate_key, task_prompt, mode, max_tools, quality_count)
         if not hasattr(self, "_query_cache"):
             self._query_cache: Dict[tuple, list[BaseTool]] = {}
         if cache_key in self._query_cache:
-            return self._query_cache[cache_key]
+            result = list(self._query_cache[cache_key])
+            self._populate_selected_tools(debug_info, result)
+            return result
 
         # Split MCP tools and non-MCP tools
         # Non-MCP tools (shell, gui, web, etc.) are always included, skip all filtering
@@ -693,7 +707,7 @@ class SearchCoordinator(BaseTool):
         # If MCP tools within limit, return all
         if len(mcp_tools) <= max_tools:
             result = mcp_tools + non_mcp_tools
-            self._query_cache[cache_key] = result
+            self._query_cache[cache_key] = list(result)
             self._populate_selected_tools(debug_info, result)
             return result
 
@@ -817,7 +831,7 @@ class SearchCoordinator(BaseTool):
         self._populate_selected_tools(debug_info, result)
         
         self._log_search_results(candidate_tools, result, mode)
-        self._query_cache[cache_key] = result
+        self._query_cache[cache_key] = list(result)
         return result
     
     def _record_tool_scores(
